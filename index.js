@@ -13,8 +13,8 @@ app.use(express.json());
 
 const mongoURI = process.env.MONGO_URI;
 mongoose.connect(mongoURI)
-.then(() => console.log('Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
+    .then(() => console.log('Connected to MongoDB'))
+    .catch((err) => console.error('MongoDB connection error:', err));
 
 const pinSchema = new Schema({
     password: { type: Buffer, required: true },
@@ -61,45 +61,64 @@ const ordersSchema = new Schema({
     clothes: {
       type: Number,
       required: true,
-      min: 0, // You can also set a minimum value
+      min: 0,
     },
     saree: {
       type: Number,
       required: true,
-      min: 0, // You can also set a minimum value
+      min: 0,
     },
     status: {
       type: String,
-      enum: ['Given', 'Received', 'Paid'], // Only allow these values
+      enum: ['Given', 'Received', 'Paid'],
       required: true,
     },
-  }, { timestamps: true }); // Automatically manage createdAt and updatedAt fields
-  
-  const Order = mongoose.model('Order', ordersSchema);
+  }, { timestamps: true });
+
+const Order = mongoose.model('Order', ordersSchema);
 
 app.get('/orders', async (req, res) => {
     try {
       const orders = await Order.find();
-      console.log(orders);
-      res.json(orders); // Send the fetched orders as JSON response
+      res.json(orders);
     } catch (error) {
       console.error('Error fetching orders:', error);
       res.status(500).json({ message: 'Failed to fetch orders' });
     }
-  });
-  
+});
 
-  app.post('/add-order', async (req, res) => {
+app.post('/add-order', async (req, res) => {
     try {
       const order = new Order(req.body);
       await order.save();
-      res.status(201).json(order); // Return the created order
+      res.status(201).json(order);
     } catch (error) {
       console.error('Error adding order:', error);
       res.status(500).json({ message: 'Failed to add order' });
     }
-  });
-  
+});
+
+app.put('/update-order/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { status } = req.body;
+
+        const updatedOrder = await Order.findByIdAndUpdate(
+            id,
+            { status },
+            { new: true }
+        );
+
+        if (!updatedOrder) {
+            return res.status(404).json({ message: 'Order not found' });
+        }
+
+        res.json(updatedOrder);
+    } catch (error) {
+        console.error('Error updating order:', error);
+        res.status(500).json({ message: 'Failed to update order' });
+    }
+});
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
